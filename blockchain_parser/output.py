@@ -8,128 +8,111 @@
 # No part of bitcoin-blockchain-parser, including this file, may be copied,
 # modified, propagated, or distributed except according to the terms contained
 # in the LICENSE file.
+#
+""" This module contains the definition for a Bitcoin transaction's output. """
+from typing import List
 
-from .utils import decode_varint, decode_uint64
+from .utils import varint, uint64
 from .script import Script
 from .address import Address
+from ._types import ScriptType
 
 
-class Output(object):
-    """Represents a Transaction output"""
+class TxOutput(object):
+    """ Output portion of a Bitcoin transaction.
 
-    def __init__(self, raw_hex):
-        self._value = None
-        self._script = None
-        self._addresses = None
+    #### Properties
+    - value: int
+    - size: int
+    - script: Script
+    - addresses: List[Address]
+    - script_type: ScriptType
 
-        script_length, varint_size = decode_varint(raw_hex[8:])
-        script_start = 8 + varint_size
+    #### Methods
+    - from_bytes(raw_data: bytes) -> TxOutput
 
-        self._script_hex = raw_hex[script_start:script_start+script_length]
-        self.size = script_start + script_length
-        self._value_hex = raw_hex[:8]
-
-    @classmethod
-    def from_hex(cls, hex_):
-        return cls(hex_)
+    """
+    def __init__(self, raw_bytes: bytes):
+        self._value: int = None
+        self._script: Script = None
+        self._addresses: List[Address] = None
+        script_length, varint_size = varint(raw_bytes[8:])
+        script_start: int = 8 + varint_size
+        self._script_raw: bytes = raw_bytes[script_start:script_start + script_length]
+        self.size: int = script_start + script_length
+        self._value_raw: bytes = raw_bytes[:8]
 
     def __repr__(self):
-        return "Output(satoshis=%d)" % self.value
+        return f'Output(satoshis={self.value})'
+
+    @classmethod
+    def from_bytes(cls, raw_data: bytes) -> 'TxOutput':
+        """ Creates a transaction's output from its raw bytes. """
+        return cls(raw_data)
+    
 
     @property
-    def value(self):
-        """Returns the value of the output expressed in satoshis"""
+    def value(self) -> int:
+        """ Value of the output expressed in satoshis. """
         if self._value is None:
-            self._value = decode_uint64(self._value_hex)
+            self._value = uint64(self._value_raw)
         return self._value
 
     @property
-    def script(self):
-        """Returns the output's script as a Script object"""
+    def script(self) -> Script:
+        """ Output's script as a Script object. """
         if self._script is None:
-            self._script = Script.from_hex(self._script_hex)
+            self._script = Script.from_bytes(self._script_raw)
         return self._script
 
     @property
-    def addresses(self):
-        """Returns a list containing all the addresses mentioned
-        in the output's script
+    def addresses(self) -> List[Address]:
+        """ List containing all the addresses mentioned in the
+        output's script.
+
         """
         if self._addresses is None:
+            _address: Address = None
             self._addresses = []
-            if self.type == "pubkey":
-                address = Address.from_public_key(self.script.operations[0])
-                self._addresses.append(address)
-            elif self.type == "pubkeyhash":
-                address = Address.from_ripemd160(self.script.operations[2])
-                self._addresses.append(address)
-            elif self.type == "p2sh":
-                address = Address.from_ripemd160(self.script.operations[1],
-                                                 type="p2sh")
-                self._addresses.append(address)
-            elif self.type == "multisig":
+            if self.script_type == 'pubkey':
+                _address = Address.from_public_key(self.script.operations[0])
+                self._addresses.append(_address)
+            elif self.script_type == 'pubkeyhash':
+                _address = Address.from_hash160(self.script.operations[2])
+                self._addresses.append(_address)
+            elif self.script_type == 'p2sh':
+                _address = Address.from_hash160(self.script.operations[1], _type='p2sh')
+                self._addresses.append(_address)
+            elif self.script_type == 'multisig':
                 n = self.script.operations[-2]
                 for operation in self.script.operations[1:1+n]:
                     self._addresses.append(Address.from_public_key(operation))
-            elif self.type == "p2wpkh":
-                address = Address.from_bech32(self.script.operations[1], 0)
-                self._addresses.append(address)
-            elif self.type == "p2wsh":
-                address = Address.from_bech32(self.script.operations[1], 0)
-                self._addresses.append(address)
-
+            elif self.script_type == 'p2wpkh':
+                _address = Address.from_bech32(self.script.operations[1], 0)
+                self._addresses.append(_address)
+            elif self.script_type == 'p2wsh':
+                _address = Address.from_bech32(self.script.operations[1], 0)
+                self._addresses.append(_address)
         return self._addresses
 
-    def is_return(self):
-        return self.script.is_return()
-
-    def is_p2sh(self):
-        return self.script.is_p2sh()
-
-    def is_pubkey(self):
-        return self.script.is_pubkey()
-
-    def is_pubkeyhash(self):
-        return self.script.is_pubkeyhash()
-
-    def is_multisig(self):
-        return self.script.is_multisig()
-
-    def is_unknown(self):
-        return self.script.is_unknown()
-
-    def is_p2wpkh(self):
-        return self.script.is_p2wpkh()
-
-    def is_p2wsh(self):
-        return self.script.is_p2wsh()
-
     @property
-    def type(self):
-        """Returns the output's script type as a string"""
-        # Fix for issue 11
+    def script_type(self) -> ScriptType:
+        """ Output's script type as a string. """
+        _type: ScriptType = 'unknown'
         if not self.script.script.is_valid():
-            return "invalid"
-
-        if self.is_pubkeyhash():
-            return "pubkeyhash"
-
-        if self.is_pubkey():
-            return "pubkey"
-
-        if self.is_p2sh():
-            return "p2sh"
-
-        if self.is_multisig():
-            return "multisig"
-
-        if self.is_return():
-            return "OP_RETURN"
-
-        if self.is_p2wpkh():
-            return "p2wpkh"
-
-        if self.is_p2wsh():
-            return "p2wsh"
-
-        return "unknown"
+            return 'invalid'
+        if self.script.is_pubkeyhash():
+            _type = 'pubkeyhash'
+        elif self.script.is_pubkey():
+            _type = 'pubkey'
+        elif self.script.is_p2sh():
+            _type = 'p2sh'
+        elif self.script.is_multisig():
+            _type = 'multisig'
+        elif self.script.is_return():
+            _type = 'OP_RETURN'
+        elif self.script.is_p2wpkh():
+            _type = 'p2wpkh'
+        elif self.script.is_p2wsh():
+            _type = 'p2wsh'
+        return _type

@@ -10,8 +10,16 @@
 # modified, propagated, or distributed except according to the terms contained
 # in the LICENSE file.
 #
-""" This package allows interpretation of locally-stored blockchain
-files.
+""" This module contains all of the types used throughout the
+blockchain parser.
 
 """
-__version__ = "0.2.0"
+import mmap
+
+from typing import Literal, TypeAlias
+
+
+ReadableBuffer: TypeAlias = bytes | bytearray | memoryview | mmap.mmap
+AddressType: TypeAlias = Literal['bech32', 'normal', 'p2sh']
+ScriptType: TypeAlias = Literal['invalid', 'pubkeyhash', 'pubkey',
+    'p2sh', 'multisig', 'OP_RETURN', 'p2wpkh', 'p2wsh', 'unknown']

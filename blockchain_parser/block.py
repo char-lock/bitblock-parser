@@ -1,3 +1,4 @@
+#
 # Copyright (C) 2015-2016 The bitcoin-blockchain-parser developers
 #
 # This file is part of bitcoin-blockchain-parser.
@@ -8,92 +9,119 @@
 # No part of bitcoin-blockchain-parser, including this file, may be copied,
 # modified, propagated, or distributed except according to the terms contained
 # in the LICENSE file.
+#
+# pylint: disable=R0205
+# pylint: disable=R0902
+# pylint: disable=R0903
+# pylint: disable=W0703
+#
 
+from typing import List, Optional
 from .transaction import Transaction
 from .block_header import BlockHeader
-from .utils import format_hash, decode_varint, double_sha256
+from .utils import hexstring, varint, sha256_2
 
 
-def get_block_transactions(raw_hex):
-    """Given the raw hexadecimal representation of a block,
-    yields the block's transactions
+def get_block_transactions(raw_data: bytes) -> Transaction:
+    """ Given the raw bytes of a block, yields the block's
+    transactions.
+
     """
     # Skipping the header
-    transaction_data = raw_hex[80:]
-
+    transaction_data: bytes = raw_data[80:]
     # Decoding the number of transactions, offset is the size of
     # the varint (1 to 9 bytes)
-    n_transactions, offset = decode_varint(transaction_data)
-
-    for i in range(n_transactions):
+    n_transactions, offset = varint(transaction_data)
+    for _ in range(n_transactions):
         # Try from 1024 (1KiB) -> 1073741824 (1GiB) slice widths
         for j in range(0, 20):
             try:
-                offset_e = offset + (1024 * 2 ** j)
-                transaction = Transaction.from_hex(
-                    transaction_data[offset:offset_e])
+                offset_e: int = offset + (1024 * 2 ** j)
+                transaction: Transaction = Transaction.from_bytes(
+                    transaction_data[offset:offset_e]
+                )
                 yield transaction
                 break
-            except:
+            except Exception:
                 continue
-
         # Skipping to the next transaction
         offset += transaction.size
 
 
 class Block(object):
-    """
-    Represents a Bitcoin block, contains its header and its transactions.
-    """
+    """ A Bitcoin block; contains its header and its transactions.
 
-    def __init__(self, raw_hex, height=None, blk_file=None):
-        self.hex = raw_hex
-        self._hash = None
-        self._transactions = None
-        self._header = None
-        self._n_transactions = None
-        self.size = len(raw_hex)
-        self.height = height
-        self.blk_file = blk_file
+    #### Properties
+    - raw: bytes
+    - size: int
+    - height: int
+    - blk_file: str
+    - hash: str
+    - n_transactions: int
+    - transactions: List[Transaction]
+    - header: BlockHeader
 
-    def __repr__(self):
-        return "Block(%s)" % self.hash
+    #### Methods
+    - from_bytes(raw_data: bytes) -> Block
+
+    """
+    def __init__(
+        self,
+        raw_data: bytes,
+        height: Optional[int] = None,
+        blk_file: Optional[str] = None
+    ):
+        self.raw: bytes = raw_data
+        self._hash: str = None
+        self._transactions: List[Transaction] = None
+        self._header: BlockHeader = None
+        self._n_transactions: int = None
+        self.size: int = len(raw_data)
+        self.height: int = height
+        self.blk_file: str = blk_file
 
     @classmethod
-    def from_hex(cls, raw_hex):
-        """Builds a block object from its bytes representation"""
-        return cls(raw_hex)
+    def from_bytes(cls, raw_data: bytes) -> 'Block':
+        """ Creates a block from its raw bytes. """
+        return cls(raw_data)
+
+    def __repr__(self) -> str:
+        return f'Block({self.hash})'
+
 
     @property
-    def hash(self):
-        """Returns the block's hash (double sha256 of its 80 bytes header"""
+    def hash(self) -> str:
+        """ Block's hash  -- sha256_2 of its 80 byte header. """
         if self._hash is None:
-            self._hash = format_hash(double_sha256(self.hex[:80]))
+            self._hash = hexstring(sha256_2(self.raw[:80]))
         return self._hash
 
     @property
-    def n_transactions(self):
-        """Return the number of transactions contained in this block,
-        it is faster to use this than to use len(block.transactions)
-        as there's no need to parse all transactions to get this information
+    def n_transactions(self) -> int:
+        """ Number of transactions contained in this block.
+
+        It is faster to use this than to use len(block.transactions),
+        as there's no need to parse all transactions to get this
+        information.
+
         """
         if self._n_transactions is None:
-            self._n_transactions = decode_varint(self.hex[80:])[0]
-
+            self._n_transactions = varint(self.raw[80:])[0]
         return self._n_transactions
 
     @property
-    def transactions(self):
-        """Returns a list of the block's transactions represented
-        as Transaction objects"""
-        if self._transactions is None:
-            self._transactions = list(get_block_transactions(self.hex))
+    def transactions(self) -> List[Transaction]:
+        """ A list of the block's transactions represented as
+        Transaction objects.
 
+        """
+        if self._transactions is None:
+            self._transactions = list(get_block_transactions(self.raw))
         return self._transactions
 
     @property
-    def header(self):
-        """Returns a BlockHeader object corresponding to this block"""
+    def header(self) -> BlockHeader:
+        """ BlockHeader object corresponding to this block. """
         if self._header is None:
-            self._header = BlockHeader.from_hex(self.hex[:80])
+            self._header = BlockHeader.from_bytes(self.raw[:80])
         return self._header

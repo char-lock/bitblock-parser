@@ -14,20 +14,20 @@ import mmap
 import struct
 import pickle
 import stat
+from binascii import unhexlify
+
 import plyvel
 
-from blockchain_parser.transaction import Transaction
-from blockchain_parser.index import DBTransactionIndex
-from blockchain_parser import utils
-from binascii import unhexlify
-from binascii import hexlify
+from .transaction import Transaction
+from .index import DBTransactionIndex
+from . import utils
 from .block import Block
 from .index import DBBlockIndex
-from .utils import format_hash
+from .utils import hexstring
 
 
 # Constant separating blocks in the .blk files
-BITCOIN_CONSTANT = b"\xf9\xbe\xb4\xd9"
+BITCOIN_CONSTANT = b'\xf9\xbe\xb4\xd9'
 
 
 def get_files(path):
@@ -44,9 +44,9 @@ def get_files(path):
 
 
 def get_blocks(blockfile):
-    """
-    Given the name of a .blk file, for every block contained in the file,
-    yields its raw hexadecimal value
+    """ Given the name of a .blk file, for every block contained in
+    the file, yields its raw hexadecimal value.
+
     """
     with open(blockfile, "rb") as f:
         if os.name == 'nt':
@@ -223,15 +223,15 @@ class Blockchain(object):
             yield Block(get_block(blkFile, blkIdx.data_pos), blkIdx.height)
 
     def get_transaction(self, txid, db):
-        """Yields the transaction contained in the .blk files as a python
-         object, similar to
-         https://developer.bitcoin.org/reference/rpc/getrawtransaction.html
-        """
+        """ Yields the transaction contained in the .blk files as a
+        Python object, similar to:
+        
+        https://developer.bitcoin.org/reference/rpc/getrawtransaction.html
 
+        """
         byte_arr = bytearray.fromhex(txid)
         byte_arr.reverse()
-        tx_hash = hexlify(b't').decode('utf-8') + \
-            hexlify(byte_arr).decode('utf-8')
+        tx_hash = b't'.hex() + byte_arr.hex()
 
         tx_hash_fmtd = unhexlify(tx_hash)
         raw_hex = db.get(tx_hash_fmtd)

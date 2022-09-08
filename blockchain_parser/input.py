@@ -1,3 +1,4 @@
+#
 # Copyright (C) 2015-2016 The bitcoin-blockchain-parser developers
 #
 # This file is part of bitcoin-blockchain-parser.
@@ -8,71 +9,98 @@
 # No part of bitcoin-blockchain-parser, including this file, may be copied,
 # modified, propagated, or distributed except according to the terms contained
 # in the LICENSE file.
+#
+""" This module contains the definition for a Bitcoin transaction's input. """
+from typing import List
 
-from .utils import decode_varint, decode_uint32, format_hash
+from .utils import varint, uint32, hexstring
 from .script import Script
 
 
-class Input(object):
-    """Represents a transaction input"""
+class TxInput():
+    # pylint: disable=R0902
+    """ Input portion of a Bitcoin transaction.
 
-    def __init__(self, raw_hex):
-        self._transaction_hash = None
-        self._transaction_index = None
-        self._script = None
-        self._sequence_number = None
-        self._witnesses = []
+    #### Properties
+    - raw: bytes
+    - script: Script
+    - sequence_number: int
+    - size: int
+    - transaction_hash: str
+    - transaction_index: int
+    - witnesses: List
 
-        self._script_length, varint_length = decode_varint(raw_hex[36:])
-        self._script_start = 36 + varint_length
+    #### Methods
+    - from_bytes(raw_data: bytes) -> 'TxInput'
 
-        self.size = self._script_start + self._script_length + 4
-        self.hex = raw_hex[:self.size]
-
-    def add_witness(self, witness):
-        self._witnesses.append(witness)
-
-    @classmethod
-    def from_hex(cls, hex_):
-        return cls(hex_)
+    """
+    def __init__(self, raw_bytes: bytes):
+        self._transaction_hash: str = None
+        self._transaction_index: int = None
+        self._script: Script = None
+        self._sequence_number: int = None
+        self._witnesses: List = []
+        self._script_length, varint_length = varint(raw_bytes[36:])
+        self._script_start: int = 36 + varint_length
+        self.raw: bytes = raw_bytes[:self.size]
 
     def __repr__(self):
-        return "Input(%s,%d)" % (self.transaction_hash, self.transaction_index)
+        return f'Input({self.transaction_hash}, {self.transaction_index})'
+
+    @classmethod
+    def from_bytes(cls, raw_data: bytes) -> 'TxInput':
+        """ Creates a transaction's input from its raw bytes. """
+        return cls(raw_data)
 
     @property
-    def transaction_hash(self):
-        """Returns the hash of the transaction containing the output
-        redeemed by this input"""
+    def transaction_hash(self) -> str:
+        """ Hash of the transaction containing the output redeemed by
+        this input.
+
+        """
         if self._transaction_hash is None:
-            self._transaction_hash = format_hash(self.hex[:32])
+            self._transaction_hash = hexstring(self.raw[:32])
         return self._transaction_hash
 
     @property
-    def transaction_index(self):
-        """Returns the index of the output inside the transaction that is
-        redeemed by this input"""
+    def transaction_index(self) -> int:
+        """ Index of the output inside the transaction redeemed by
+        this input.
+
+        """
         if self._transaction_index is None:
-            self._transaction_index = decode_uint32(self.hex[32:36])
+            self._transaction_index = uint32(self.raw[32:36])
         return self._transaction_index
 
     @property
-    def sequence_number(self):
-        """Returns the input's sequence number"""
+    def sequence_number(self) -> int:
+        """ Input's sequence number. """
         if self._sequence_number is None:
-            self._sequence_number = decode_uint32(
-                self.hex[self.size-4:self.size]
+            self._sequence_number = uint32(
+                self.raw[self.size - 4:self.size]
             )
         return self._sequence_number
 
     @property
-    def script(self):
-        """Returns a Script object representing the redeem script"""
+    def script(self) -> Script:
+        """ Script object representing the redeem script. """
         if self._script is None:
-            end = self._script_start + self._script_length
-            self._script = Script.from_hex(self.hex[self._script_start:end])
+            _end: int = self._script_start + self._script_length
+            self._script = Script.from_bytes(self.raw[self._script_start:_end])
         return self._script
 
     @property
-    def witnesses(self):
-        """Return a list of witness data attached to this input, empty if non segwit"""
+    def size(self) -> int:
+        """ Length of the input in bytes. """
+        return self._script_start + self._script_length + 4
+
+    @property
+    def witnesses(self) -> List:
+        """ List of witness data attached to this input. """
         return self._witnesses
+
+
+    def add_witness(self, witness) -> None:
+        """ Adds a witness to the input's list. """
+        self._witnesses.append(witness)
+    
