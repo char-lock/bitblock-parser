@@ -17,9 +17,9 @@ from blockchain_parser.block import Block
 
 
 class TestBlock(unittest.TestCase):
-    def test_from_hex(self):
+    def test_from_bytes(self):
         block_hex = read_test_data("genesis_block.txt")
-        block = Block.from_hex(block_hex)
+        block = Block.from_bytes(block_hex)
         self.assertEqual(1, block.n_transactions)
         block_hash = "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1" \
                      "b60a8ce26f"

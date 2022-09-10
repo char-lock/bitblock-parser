@@ -6,7 +6,7 @@ from blockchain_parser.index import DBTransactionIndex
 
 
 class TestDBIndex(unittest.TestCase):
-    def test_from_hex(self):
+    def test_from_bytes(self):
         key_str = "0000000000000000169cdec8dcfa2e408f59e0d50b1a228f65d8f548" \
                   "0f990000"
         value_str = "88927193a7021d8160804aaa89fc0185b6e81e02000000fb759231" \
@@ -34,7 +34,7 @@ class TestDBIndex(unittest.TestCase):
 
 
 class TestDBTransactionIndex(unittest.TestCase):
-    def test_from_hex(self):
+    def test_from_bytes(self):
         key_str = "70ad7da56decc86b8a58ac53dbde792c9e97552cdaafd37312af7c4" \
                   "d5c7d0cc1"
         value_str = "9071938b980ba4bf39"

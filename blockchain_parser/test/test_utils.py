@@ -18,13 +18,13 @@ from blockchain_parser import utils
 class TestUtils(unittest.TestCase):
     def test_btc_ripemd160(self):
         data = a2b_hex("02218AD6CDC632E7AE7D04472374311CEBBBBF0AB540D2D08C3400BB844C654231")
-        ripe = utils.btc_ripemd160(data)
+        ripe = utils.hash160(data)
         expected = b"5238c71458e464d9ff90299abca4a1d7b9cb76ab"
         self.assertEqual(b2a_hex(ripe), expected)
 
     def test_format_hash(self):
         data = a2b_hex("deadbeef")
-        self.assertEqual(utils.format_hash(data), "efbeadde")
+        self.assertEqual(utils.hexstring(data), "efbeadde")
 
     def test_decode_uint32(self):
         uint32_dict = {
@@ -33,7 +33,7 @@ class TestUtils(unittest.TestCase):
         }
 
         for uint32, value in uint32_dict.items():
-            self.assertEqual(utils.decode_uint32(a2b_hex(uint32)), value)
+            self.assertEqual(utils.uint32(a2b_hex(uint32)), value)
 
     def test_decode_uint64(self):
         uint64_dict = {
@@ -42,14 +42,14 @@ class TestUtils(unittest.TestCase):
         }
 
         for uint64, value in uint64_dict.items():
-            self.assertEqual(utils.decode_uint64(a2b_hex(uint64)), value)
+            self.assertEqual(utils.uint64(a2b_hex(uint64)), value)
 
     def test_decode_varint(self):
         case1 = a2b_hex("fa")
-        self.assertEqual(utils.decode_varint(case1), (250, 1))
+        self.assertEqual(utils.varint(case1), (250, 1))
         case2 = a2b_hex("fd0100")
-        self.assertEqual(utils.decode_varint(case2), (1, 3))
+        self.assertEqual(utils.varint(case2), (1, 3))
         case3 = a2b_hex("fe01000000")
-        self.assertEqual(utils.decode_varint(case3), (1, 5))
+        self.assertEqual(utils.varint(case3), (1, 5))
         case4 = a2b_hex("ff0100000000000000")
-        self.assertEqual(utils.decode_varint(case4), (1, 9))
+        self.assertEqual(utils.varint(case4), (1, 9))

@@ -28,5 +28,5 @@ class TestUtils(unittest.TestCase):
 
     def test_from_ripemd160(self):
         ripemd160 = "010966776006953D5567439E5E39F86A0D273BEE"
-        address = Address.from_ripemd160(a2b_hex(ripemd160))
+        address = Address.from_hash160(a2b_hex(ripemd160))
         self.assertEqual(address.address, "16UwLL9Risc3QfPqBUvKofHmBQ7wMtjvM")

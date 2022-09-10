@@ -105,7 +105,7 @@ class TestTransaction(unittest.TestCase):
         self.assertTrue(
             tx.hash == "29a3efd3ef04f9153d47a990bd7b048a4b2d213daa"
                        "a5fb8ed670fb85f13bdbcf")
-        self.assertTrue(tx.size == len(tx.hex))
+        self.assertTrue(tx.size == len(tx.raw))
 
     def test_incomplete(self):
         data = read_test_data("invalid_tx.txt")
