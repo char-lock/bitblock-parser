@@ -15,6 +15,7 @@
 # pylint: disable=R0903
 # pylint: disable=W0703
 #
+""" This module holds the definition for the Block class. """
 
 from typing import List, Optional
 from .transaction import Transaction
