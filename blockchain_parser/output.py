@@ -49,7 +49,7 @@ class TxOutput(object):
     def from_bytes(cls, raw_data: bytes) -> 'TxOutput':
         """ Creates a transaction's output from its raw bytes. """
         return cls(raw_data)
-    
+
 
     @property
     def value(self) -> int:
@@ -84,8 +84,8 @@ class TxOutput(object):
                 _address = Address.from_hash160(self.script.operations[1], _type='p2sh')
                 self._addresses.append(_address)
             elif self.script_type == 'multisig':
-                n = self.script.operations[-2]
-                for operation in self.script.operations[1:1+n]:
+                _n: int = self.script.operations[-2]
+                for operation in self.script.operations[1:1 + _n]:
                     self._addresses.append(Address.from_public_key(operation))
             elif self.script_type == 'p2wpkh':
                 _address = Address.from_bech32(self.script.operations[1], 0)
